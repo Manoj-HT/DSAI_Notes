@@ -150,7 +150,7 @@ ML is used everywhere, some examples:
 
 - **Covariance :** Shows direction of relationship(positive/negative) between two variables
     - Formula:<br> 
-    $ \mathrm{Cov}(X,Y) = \dfrac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{n-1} $
+    $ \mathrm{Cov}(X,Y) = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{n-1} $
     - Positive: both increase together
     - Negative: one increases and other decreases
 
