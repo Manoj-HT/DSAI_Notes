@@ -150,13 +150,13 @@ ML is used everywhere, some examples:
 
 - **Covariance :** Shows direction of relationship(positive/negative) between two variables
     - Formula:<br> 
-    $ \operatorname{Cov}(X,Y) = \dfrac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{n-1} $
+    $ \mathrm{Cov}(X,Y) = \dfrac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{n-1} $
     - Positive: both increase together
     - Negative: one increases and other decreases
 
 - **Correlation :** Standardized form of covariance, range from -1 to +1
     - Formula: <br>
-    $\operatorname{r} = \dfrac{Cov(X,Y)}{\sigma_x\sigma_y
+    $\mathrm{r} = \dfrac{Cov(X,Y)}{\sigma_x\sigma_y
     }$
     - r = 1 $\to$ perfect positive
     - r = -1 $\to$ perfect negative
@@ -169,7 +169,7 @@ ML is used everywhere, some examples:
 ## Ordinary least squares
 
 - Method tp find the best-fitting line by minimizing sum of squared errors: <br>
-$\operatorname{SSE} = \sum (y_i - \hat{y_i})^2$
+$\mathrm{SSE} = \sum (y_i - \hat{y_i})^2$
 - The line with minimium SSE is chosen
 
 ## $R^2$ and Adjusted $R^2$
@@ -178,7 +178,7 @@ $\operatorname{SSE} = \sum (y_i - \hat{y_i})^2$
     - Measures how much variance in y is explained by the model
     - Range: 0 to 1 (higher is better)
     - Formula: <br>
-    $\operatorname{R^2} = 1- \dfrac{SSE}{SST}$
+    $\mathrm{R^2} = 1- \dfrac{SSE}{SST}$
 - Adjusted $R^2$: Corrects $R^2$ for multiple predictors.
     - Avoids artificial inflation when adding irrelevant variables
 
