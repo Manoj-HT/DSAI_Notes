@@ -1,0 +1,1200 @@
+# C1: INTRODUCTION TO ODDS AND PROBABILITY, BINOMIAL LOGISTIC REGRESSION
+
+## Standard Process of Data Science Projects
+
+**CRISP-DM Framework:**
+1. **Business Understanding:** Define the problem clearly.  
+   *Example:* Predict if a patient has cancer.  
+2. **Data Understanding:** Explore data, understand features, distributions, missing values.  
+3. **Data Preparation:** Clean, transform, encode categorical features, handle missing values, scaling.  
+4. **Modeling:** Choose algorithm, train, tune hyperparameters.  
+5. **Evaluation:** Use metrics (accuracy, precision, recall, F1, AUC).  
+6. **Deployment:** Integrate into production, monitor performance.  
+
+## Basic Concepts Revisited
+
+- **Supervised Learning:** Learn mapping from input features → output labels (classification or regression).  
+- **Classification:** Output variable is categorical.  
+  *Example:* Yes/No, Class A/Class B.  
+- **Regression:** Output variable is continuous.  
+  *Example:* House price.  
+- **Features:** Independent variables.  
+- **Target:** Dependent variable.  
+
+## Odds and Probability
+
+#### Probability
+- Measures the likelihood of an event:  
+  $\mathrm{P(event)} = \dfrac{\text{favorable outcomes}}{\text{total outcomes}}$  
+
+- *Example:* If 3 out of 10 patients have cancer,  
+  $\mathrm{P(cancer)} = \dfrac{3}{10} = 0.3$  
+
+#### Odds
+- Ratio of the probability of the event happening to it not happening:  
+  $\mathrm{Odds} = \dfrac{P(event)}{1 - P(event)}$  
+
+- *Example:*  
+  $\mathrm{Odds(cancer)} = \dfrac{0.3}{1 - 0.3} = \dfrac{0.3}{0.7} \approx 0.43$  
+  **Interpretation:** Odds < 1 means the event is less likely than not happening.  
+
+#### Odds Ratio
+- Compares odds between two groups:  
+  $\mathrm{Odds\;Ratio} = \dfrac{\text{Odds in Group 1}}{\text{Odds in Group 2}}$  
+
+## Binomial Logistic Regression
+
+- **Purpose:**  
+  Predicts the probability of a binary outcome (two classes).  
+  *Example:* Will the email be spam (Yes/No)?  
+
+- **Key Formula:**  
+  $\log\left(\dfrac{P}{1 - P}\right) = \beta_0 + \beta_1X_1 + \beta_2X_2 + \dots$  
+
+
+## Sigmoid Function
+
+- Transforms log-odds into probability:  
+  $\mathrm{P} = \dfrac{1}{1 + e^{-(\beta_0 + \beta_1X_1 + \beta_2X_2 + \dots)}}$  
+
+- **Shape:** S-curve between 0 and 1.
+
+# Python Example: Logistic Regression 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+
+# Example dataset
+data = pd.DataFrame({
+    'age': [25, 32, 47, 51, 62, 23, 34, 45],
+    'bp': [120, 130, 140, 150, 160, 110, 125, 135],
+    'has_disease': [0, 0, 1, 1, 1, 0, 0, 1]
+})
+
+# Features & target
+X = data[['age', 'bp']]
+y = data['has_disease']
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+# Model training
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+# C2: ASSUMPTIONS OF LOGISTIC REGRESSION & MODEL EVALUATION
+
+## Assumptions of Logistic Regression
+Before performing Logistic Regression, we must check if certain conditions hold:
+
+1. **Binary outcome**
+    - The dependent variable must be binary (0/1, yes/no, true/false).
+    - For multiclass problems, categorical extensions like *multinomial logistic regression* should be used.
+
+2. **Independence of observations**
+    - Each data point should be independent.
+    - Example: A patient’s record should not influence another patient’s record.
+
+3. **Linearity of Log-Odds**
+    - Logistic regression assumes that the log(odds) has a linear relationship with the predictors.
+    - Example: $\mathrm{log(odds)} = \beta_0 + \beta_1 \cdot \text{age} + \beta_2 \cdot \text{blood pressure}$
+
+4. **No multicollinearity among predictors**
+    - Predictors should not be highly correlated with each other.
+    - Example: Height in cm and height in inches (redundant values).
+
+5. **Large sample size**
+    - Logistic regression works best with large datasets.
+    - This is especially important when the event of interest is rare.
+
+## Model Evaluation Metrics
+- Logistic regression is primarily used for classification.
+- We need to evaluate performance using multiple metrics, not just accuracy.
+
+### Confusion Matrix
+
+|                     | Predicted Positive  | Predicted Negative  |
+| ------------------- | ------------------- | ------------------- |
+| **Actual Positive** | True Positive (TP)  | False Negative (FN) |
+| **Actual Negative** | False Positive (FP) | True Negative (TN)  |
+
+### Metrics
+
+1. **Accuracy**
+    - $\mathrm{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}$
+    - Shows overall correctness of the model.
+    - Can be misleading in imbalanced datasets (e.g., when one class dominates).
+
+2. **Precision**
+    - $\mathrm{Precision} = \frac{TP}{TP + FP}$
+    - Focus: Correctness of positive predictions.
+    - Tells how many predicted positives were actually correct.
+    - Example: Out of 100 predicted "cancer" cases, 80 were correct → precision = 0.8.
+
+3. **Recall (Sensitivity / True Positive Rate)**
+    - $\mathrm{Recall} = \frac{TP}{TP + FN}$
+    - Focus: Capturing actual positives.
+    - Tells how many of the real positive cases were correctly identified.
+    - Example: Out of 100 actual cancer cases, the model detected 90 → recall = 0.9.
+
+4. **F1 Score**
+    - $\mathrm{F1} = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall}$
+    - Harmonic mean of precision and recall.
+    - Useful when there is class imbalance and we want a balance between precision and recall.
+
+5. **ROC Curve & Area Under Curve (AUC)**
+    - ROC curve plots True Positive Rate (Recall) vs. False Positive Rate.
+    - AUC represents the area under this curve.
+    - Interpretation:
+        - AUC = 0.5 → Model is no better than random guessing.
+        - AUC close to 1 → Model is very good at distinguishing between classes.
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Example dataset
+data = pd.DataFrame({
+    'age': [25, 32, 47, 51, 62, 23, 34, 45, 36, 50],
+    'bp': [120, 130, 140, 150, 160, 110, 125, 135, 128, 142],
+    'has_disease': [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
+})
+
+X = data[['age', 'bp']]
+y = data['has_disease']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:,1]
+
+print("Confusion Matrix :", confusion_matrix(y_test, y_pred))
+print("Accuracy :", accuracy_score(y_test, y_pred))
+print("Precision :", precision_score(y_test, y_pred, zero_division=0))
+print("Recall :", recall_score(y_test, y_pred, zero_division=0))
+print("F1 score :", f1_score(y_test, y_pred, zero_division=0))
+print("ROC-AUC :", roc_auc_score(y_test, y_prob))
+
+## Model Performance
+
+Consider an example with a dataset of 100 patients:
+- 95 healthy (class 0)
+- 5 with disease (class 1)
+
+If a model always predicts "healthy," it will achieve 95% accuracy.  
+However, this is misleading because it fails to identify any diseased patients.  
+
+This is why we use additional metrics such as **Precision, Recall, F1-score, and ROC-AUC**, instead of relying only on accuracy.
+
+## Handling Imbalanced Data
+
+When one class is much rarer than the other, models tend to ignore the minority class.  
+Examples include **fraud detection, cancer diagnosis, churn prediction, and rare event forecasting**.
+
+### Techniques to Handle Imbalance
+
+1. **Resampling**
+    - **Oversampling the minority class**: Duplicate rare samples or create synthetic ones.
+    - **Undersampling the majority class**: Randomly drop some frequent class samples.
+    - **Trade-off**: Oversampling may cause overfitting; undersampling can result in loss of useful information.
+
+2. **Synthetic Minority Oversampling Technique (SMOTE)**
+    - Creates new synthetic samples for the minority class by interpolating between existing samples.
+    - Balances the dataset more effectively than simple duplication.
+    - **Caution**: May create overlapping or noisy samples if not tuned carefully.
+
+3. **Class Weight Adjustment**
+    - Assign higher importance (weight) to the minority class during training.
+    - In Logistic Regression, this can be done using `class_weight='balanced'`.
+    - Helps the model pay more attention to rare events.
+
+4. **Threshold Tuning**
+    - Logistic regression outputs probabilities by default.
+    - The usual cutoff is **0.5**, but in imbalanced problems, lowering the threshold can help capture more positives.
+    - **Trade-off**: Lowering the threshold increases Recall but reduces Precision.
+
+5. **Evaluation with Proper Metrics**
+    - In imbalanced datasets, Accuracy is not reliable.
+    - Metrics like **Precision-Recall Curve, F1-score, ROC-AUC, and Matthews Correlation Coefficient (MCC)** are more informative.
+
+# Logistic regression with class weights
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+X, y = make_classification(n_samples=1000, n_features=5, n_classes=2, weights=[0.9, 0.1], random_state=42)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+model_normal = LogisticRegression(max_iter=1000)
+model_normal.fit(X_train, y_train)
+print("Without class weight :", classification_report(y_test, model_normal.predict(X_test)))
+
+model_balanced = LogisticRegression(class_weight='balanced', max_iter=1000)
+model_balanced.fit(X_train, y_train)
+print("With class weight :", classification_report(y_test, model_balanced.predict(X_test)))
+
+# Using SMOTE oversampling
+from imblearn.over_sampling import SMOTE
+from sklearn.metrics import confusion_matrix
+
+smote = SMOTE(random_state=42)
+X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+
+print("Before SMOTE :", pd.Series(y_train).value_counts())
+print("After SMOTE :", pd.Series(y_train_res).value_counts())
+
+model_smote = LogisticRegression(max_iter=1000)
+model_smote.fit(X_train_res,y_train_res)
+y_pred = model_smote.predict(X_test)
+
+print("Confustion matrix :", confusion_matrix(y_test, y_pred))
+print("Classification report :", classification_report(y_test, y_pred))
+
+# C3: BAYES THEOREM, NAÏVE BAYES, KNN
+
+## Bayes' Theorem
+
+- **Definition:** A rule in probability theory that describes how to update the probability of a hypothesis when new evidence is observed.  
+- $\mathrm{P(A|B)}=\frac{P(B|A)P(A)}{P(B)}$
+- **P(A|B):** Probability of event A given that B has happened (posterior)  
+- **P(B|A):** Probability of event B given A (likelihood)  
+- **P(A):** Initial probability of A (prior)  
+- **P(B):** Probability of evidence B (normalizing constant)  
+
+### Example
+
+- A patient tests positive for a rare disease:  
+- **Prior:** Only 1% of people have it → P(Disease) = 0.01  
+- **Likelihood:** Test detects disease correctly 99% of the time → P(Pos|Disease) = 0.99  
+- **False positive rate:** 5% → P(Pos|NoDisease) = 0.05  
+- **Evidence:** Overall probability of a positive test  
+- $\mathrm{P(Disease|Positive)}=\frac{0.99 \cdot 0.01}{(0.99 \cdot 0.01) + (0.05 \cdot 0.99)} \approx 0.167$  
+- **Business interpretation:** Even with a positive test, the chance of actually having the disease is only about 16.7%.  
+
+## Classifier
+
+- An algorithm that categorizes data into classes.  
+- It takes an input feature $X$ and predicts a class label $Y$.  
+
+## Naïve Bayes Classifier
+
+- A probabilistic classifier based on Bayes' theorem.  
+- Assumes that all features are independent of each other.  
+- In reality, this assumption may not always hold, hence the name *naïve*.  
+
+### Formula
+
+- $P(C_k \mid x_1, x_2, \dots, x_n) = \frac{P(C_k) \prod_{i=1}^n P(x_i \mid C_k)}{P(x_1, x_2, \dots, x_n)}$  
+
+Where:  
+- $C_k$: Class $k$  
+- $x_1, x_2, \dots, x_n$: Features  
+- $P(C_k)$: Prior probability of $C_k$  
+- $P(x_i|C_k)$: Likelihood of feature $x_i$ given class $C_k$  
+
+### Types
+
+1. **Gaussian:** Assumes features follow a normal distribution  
+2. **Multinomial:** Good for text classification  
+3. **Bernoulli:** Works with binary features  
+
+### Advantages
+
+- Simple, fast, and easy to train  
+- Works well with high-dimensional data  
+- Requires less training data compared to other models  
+
+### Limitations
+
+- The assumption of independent features is rarely true in practice  
+- If a category/feature never occurs with a class, the probability becomes zero (handled using **Laplace smoothing**)  
+
+### Use Cases
+
+- Spam detection  
+- Sentiment analysis  
+- Document classification  
+- Medical diagnosis  
+
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import classification_report
+
+# Example dataset
+texts = [
+    "Win lottery now", "Free money offer", "Congratulations you won", 
+    "Claim free prize", "Cheap loans available", "Get rich quick", 
+    "Lunch at 1?", "Project deadline tomorrow", "Meeting at 5", 
+    "Are we on call?", "See you at dinner", "Report looks good"
+]
+labels = [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]  # 6 spam, 6 ham
+
+# Convert text to features
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(texts)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.3, random_state=42, stratify=labels)
+
+# Naive Bayes model
+model = MultinomialNB()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation
+print("Classification Report:\n", classification_report(y_test, y_pred, zero_division=0))
+
+## K-Nearest Neighbors (KNN)
+
+- KNN is one of the simplest algorithms in machine learning.  
+- It does not build a mathematical model.  
+- Instead, it memorizes the training data.  
+- To classify a new point:  
+  - Look at its *K* nearest neighbors.  
+  - Assign the class based on the majority vote.  
+
+### Distance Measures
+
+Common ways to measure closeness between two data points:  
+1. **Euclidean distance**  
+2. **Manhattan distance**  
+3. **Minkowski distance**  
+4. **Cosine similarity**  
+
+### Choice of K
+
+1. A **small K** makes the model very sensitive, leading to **overfitting**.  
+2. A **large K** makes the model smoother but may misclassify minority classes, leading to **underfitting**.  
+
+- Usually, an odd value of K is chosen to avoid ties.  
+- The optimal value of K is typically tuned using cross-validation.  
+
+### Steps of KNN
+
+1. Choose a value for K.  
+2. Compute the distance from the new sample point to all training points.  
+3. Pick the K closest points.  
+4. Perform majority voting (for classification) or averaging (for regression).  
+
+### Advantages
+
+- Simple and easy to implement.  
+- Works well for low-dimensional data.  
+- No explicit training phase is required.  
+
+### Disadvantages
+
+- Slow for large datasets, since distances must be computed for all data points.  
+- Sensitive to irrelevant features, so feature scaling is often necessary.  
+- Model performance is highly dependent on the choice of K.  
+
+# KNN on classification
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Load dataset
+iris = load_iris()
+X, y = iris.data, iris.target  # features, labels
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+# Build KNN model
+knn = KNeighborsClassifier(n_neighbors=5)  # k=5
+knn.fit(X_train, y_train)
+
+# Predictions
+y_pred = knn.predict(X_test)
+
+# Evaluation
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Choosing optimal K
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+k_values = range(1, 21)
+scores = []
+
+for k in k_values:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+    scores.append(accuracy_score(y_test, y_pred))
+
+plt.plot(k_values, scores, marker='o')
+plt.xlabel("K")
+plt.ylabel("Accuracy")
+plt.title("K vs Accuracy")
+plt.show()
+
+# C4: DECISION TREE
+
+## Decision Tree  
+
+- **Definition:** A supervised machine learning algorithm that uses a flowchart-like tree structure to model decisions and their possible consequences.
+
+### Working / Construction
+
+1. Start at the root node  
+2. Select the best attribute  
+3. Split the data based on the chosen attribute  
+4. Repeat the process for each subset  
+5. Continue until a leaf node is reached  
+
+### Advantages
+
+- Easy to understand and interpret
+- Requires little data preparation
+- Handles non linear relationships
+- Effective feature selection
+
+### Disadvantages  
+
+- Prone to overfitting  
+- Can be unstable  
+- Biased toward dominant classes  
+
+## Terminologies  
+
+### Root Node  
+
+- The topmost node and the starting point of the tree  
+- Represents the entire dataset before any splitting  
+- Chosen based on the feature that provides the highest information gain  
+- All other branches grow from this node  
+
+### Splitting  
+
+- **Definition:** Dividing a node into two or more sub-nodes based on chosen features/conditions  
+- **Purpose:** To make child nodes more pure  
+- **Splitting Criterion:** Depends on the algorithm  
+- **Process:**  
+  - At a node, evaluate all features  
+  - Select the feature/threshold that best separates the data  
+  - Create branches based on that decision  
+
+### Leaf / Terminal Node  
+
+- A node with no further splits  
+- Represents the final outcome or decision of the path  
+- All data points reaching this node are classified or regressed into a single value or category  
+
+### Branch  
+
+- A connection between a parent node and a child node  
+- Represents the outcome of a condition or test applied at the parent node  
+- Each branch corresponds to a decision path  
+
+### Depth of a Decision Tree  
+
+- The length of the longest path from the root node to a leaf node  
+- The root node has depth = 0  
+- Indicates how many decisions are made before reaching the final prediction  
+- A deeper tree means a more complex model  
+
+## Measure of Purity of a Node  
+
+- **Purity:** Refers to how homogeneous or uniform the data within a node is with respect to the target class  
+- A node is perfectly pure if all the data points in it belong to the same class  
+- The ultimate goal of a decision tree algorithm is to create splits that result in the purest possible child nodes, leading to better classification  
+- Common measures of node purity:  
+  - Entropy  
+  - Gini Impurity  
+
+## Entropy  
+
+- A measure of impurity or disorder in a dataset  
+- Higher entropy means the data is more mixed  
+- Lower entropy means the data is more pure  
+- Used in ID3 and C4.5 algorithms to decide the best split  
+- Entropy can sometimes result in slightly more balanced trees, but it is computationally more intensive  
+
+### Formula  
+
+- $\text{Entropy}(S) = - \sum_{i=1}^k p_i \log_2(p_i)$  
+- $k$ = number of classes  
+- $p_i$ = proportion of class $i$ in set $S$  
+
+### Intuition  
+
+- If all samples belong to one class, then $\text{Entropy} = 0$  
+- If samples are split 50/50 between two classes, then $\text{Entropy} = 1$  
+
+### Shannon's Entropy  
+
+- Introduced by Claude Shannon  
+- Measures the average amount of information in a random variable  
+- Forms the basis for entropy used in decision trees  
+
+### Conditional Entropy  
+
+- Measures the amount of uncertainty remaining in a random variable $Y$ given that we already know the value of another variable $X$  
+- In other words, it quantifies how much extra information is required to describe $Y$ once $X$ is known  
+
+## Information Gain  
+
+- A measure of how much entropy is reduced after splitting a dataset based on a feature  
+- Used in decision trees to select the best attribute for splitting  
+
+### Formula  
+
+- $\text{IG}(Y, X) = H(Y) - H(Y|X)$  
+- $H(Y)$: Entropy of the target before the split  
+- $H(Y|X)$: Conditional entropy of the target after the split  
+
+### Intuition  
+
+- **High IG:** The feature gives a large reduction in uncertainty, indicating a good split  
+- **Low IG:** The feature provides little reduction in uncertainty, indicating a poor split  
+
+## Gini Impurity / Gini Index  
+
+- Measures the probability of misclassifying a randomly chosen data point in a node  
+- Gini impurity is generally faster to compute than entropy because it does not involve logarithmic calculations  
+
+### Formula  
+
+For a node $t$ with $C$ classes, the Gini impurity is calculated as:  
+
+- $\text{Gini}(t) = 1 - \sum_{i=1}^C p_i^2$  
+- where $p_i$ is the probability of class $i$ at that node  
+
+### Intuition  
+
+- A Gini impurity of 0 means the node is perfectly pure  
+- A Gini impurity of 0.5 indicates the node is at maximum impurity  
+
+## Classification Error  
+
+- **Definition:** A measure of a machine learning model's performance  
+- **Formula:**  
+  - $\text{Classification-error-rate} = \frac{\text{Number of incorrect predictions}}{\text{Total number of predictions}}$  
+- It is the inverse of accuracy:  
+  - $\text{Classification Error Rate} = 1 - \text{Accuracy}$  
+
+### Classification vs Accuracy  
+
+- While accuracy is a useful metric, relying on it alone can be misleading, especially with imbalanced datasets  
+- Gini impurity and entropy are commonly used and are more sensitive to node purity, while the classification error rate is sometimes used for pruning the final tree  
+
+### Terminologies  
+
+- **Precision:** The proportion of positive identifications that were actually correct  
+- **Recall (Sensitivity):** The proportion of actual positives that were correctly identified  
+- **F1-Score:** A metric that combines precision and recall  
+
+import numpy as np
+
+def entropy(probs):
+    return -np.sum([p * np.log2(p) for p in probs if p > 0])
+
+def gini(probs):
+    return 1 - np.sum([p**2 for p in probs])
+
+def classification_error(probs):
+    return 1 - np.max(probs)
+
+# Example: dataset has 70% class 1, 30% class 0
+probs = [0.7, 0.3]
+
+print("Entropy:", entropy(probs))
+print("Gini:", gini(probs))
+print("Classification Error:", classification_error(probs))
+
+def information_gain(parent_probs, children_counts):
+    """
+    parent_probs: list of probabilities at parent
+    children_counts: list of lists (each child distribution of class counts)
+    """
+    total = sum([sum(child) for child in children_counts])
+    parent_entropy = entropy(parent_probs)
+    
+    weighted_child_entropy = 0
+    for child in children_counts:
+        child_total = sum(child)
+        child_probs = [c/child_total for c in child]
+        weighted_child_entropy += (child_total/total) * entropy(child_probs)
+    
+    return parent_entropy - weighted_child_entropy
+
+# Example: parent node (7 positive, 3 negative) -> entropy
+parent_probs = [7/10, 3/10]
+
+# Suppose we split into 2 children:
+# Child1: 4 pos, 0 neg  | Child2: 3 pos, 3 neg
+children_counts = [[4,0],[3,3]]
+
+print("Information Gain:", information_gain(parent_probs, children_counts))
+
+from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+import matplotlib.pyplot as plt
+
+# Load dataset
+iris = load_iris()
+X, y = iris.data, iris.target
+
+# Train Decision Tree with Gini
+clf = DecisionTreeClassifier(criterion='gini', max_depth=3, random_state=42)
+clf.fit(X, y)
+
+# Plot the tree
+plt.figure(figsize=(12,8))
+plot_tree(clf, feature_names=iris.feature_names, class_names=iris.target_names, filled=True)
+plt.show()
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import pandas as pd
+
+# Simple dataset
+data = pd.DataFrame({
+    'age': [22, 25, 47, 52, 46, 56, 44, 35, 52, 23],
+    'bp': [120, 130, 140, 150, 135, 160, 128, 132, 142, 125],
+    'disease': [0, 0, 1, 1, 1, 1, 1, 0, 1, 0]
+})
+
+X = data[['age','bp']]
+y = data['disease']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+clf = DecisionTreeClassifier(criterion='entropy', random_state=42)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred, zero_division=0))
+
+# C5: RANDOM FOREST AND ENSEMBLE LEARNING
+
+## Model Evaluation
+
+- **Definition:** The process of assessing how well a trained model performs on unseen data.  
+- **Purpose:** To check if the model generalizes well, not just memorizes the data.  
+- **Data used:** Typically done on validation and test datasets.  
+- **Methods:**
+    - Train/Test split
+    - Cross-validation
+    - Bootstrapping
+- **Goal:** To select the best model and avoid overfitting or underfitting.
+
+### Bootstrap
+
+- A sampling method that selects random data **with replacement** from the original dataset to create a new dataset.  
+- Used to create diversity in ensemble models.
+
+## Model Performance Metrics
+
+### For Classification
+
+- Accuracy
+- Precision
+- Recall
+- F1 Score
+- Specificity
+- ROC-AUC
+- Log Loss / Cross-Entropy
+
+### For Regression
+
+- Mean Absolute Error (MAE)  
+- Mean Squared Error (MSE)  
+- Root Mean Squared Error (RMSE)  
+- $R^2$ (Coefficient of Determination)  
+- Adjusted $R^2$
+
+### For Clustering
+
+- Silhouette Score
+- Davies-Bouldin Index
+- Calinski-Harabasz Index
+
+## Overfitting in Decision Trees
+
+Overfitting occurs when a decision tree becomes too complex and learns not only general patterns but also noise and random fluctuations in the training data.
+
+- **Cause:** Tree grows too deep with too many branches.  
+- **Effect:** Model performs very well on training data but poorly on unseen data.  
+- **Symptoms:**
+    - High training accuracy but lower test accuracy
+    - Many tiny splits that capture outliers or rare cases
+- **Prevention:**
+    - Pruning
+    - Max depth
+    - Minimum samples split
+    - Max features
+    - Using ensemble methods
+
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Load dataset
+iris = load_iris()
+X, y = iris.data, iris.target
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+depths = range(1, 20)
+dt_train_acc, dt_test_acc = [], []
+rf_train_acc, rf_test_acc = [], []
+
+for d in depths:
+    # Decision Tree
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    dt_train_acc.append(accuracy_score(y_train, dt.predict(X_train)))
+    dt_test_acc.append(accuracy_score(y_test, dt.predict(X_test)))
+    
+    # Random Forest
+    rf = RandomForestClassifier(n_estimators=50, max_depth=d, random_state=42)
+    rf.fit(X_train, y_train)
+    rf_train_acc.append(accuracy_score(y_train, rf.predict(X_train)))
+    rf_test_acc.append(accuracy_score(y_test, rf.predict(X_test)))
+
+# Plot
+plt.figure(figsize=(10,6))
+plt.plot(depths, dt_train_acc, label="Decision Tree Train", linestyle="--", marker="o")
+plt.plot(depths, dt_test_acc, label="Decision Tree Test", marker="o")
+plt.plot(depths, rf_train_acc, label="Random Forest Train", linestyle="--", marker="x")
+plt.plot(depths, rf_test_acc, label="Random Forest Test", marker="x")
+plt.xlabel("Tree Depth")
+plt.ylabel("Accuracy")
+plt.title("Decision Tree vs Random Forest (Overfitting Demo)")
+plt.legend()
+plt.show()
+
+## Hyperparameters
+
+- **Definition:** External settings or configurations of a machine learning model that can be set before training.  
+- **Purpose:** They control the learning process and model complexity.  
+- **Note:** They are not learned from data and must be set manually or tuned.  
+- **Uses:**  
+    - Directly affect model performance.  
+    - Usually tuned using Grid Search, Random Search, or Bayesian Optimization.
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+# 1. Load dataset
+X, y = load_iris(return_X_y=True)
+
+# 2. Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# 3. Overfitting with no constraints (deep tree)
+overfit_tree = DecisionTreeClassifier(random_state=42)
+overfit_tree.fit(X_train, y_train)
+
+print("Overfit Tree - Train Accuracy:", accuracy_score(y_train, overfit_tree.predict(X_train)))
+print("Overfit Tree - Test Accuracy :", accuracy_score(y_test, overfit_tree.predict(X_test)))
+
+# 4. Preventing overfitting with hyperparameters
+# - max_depth: limits tree depth
+# - min_samples_split: minimum samples to split a node
+# - min_samples_leaf: minimum samples in a leaf
+regularized_tree = DecisionTreeClassifier(
+    random_state=42,
+    max_depth=3,
+    min_samples_split=4,
+    min_samples_leaf=2
+)
+regularized_tree.fit(X_train, y_train)
+
+print("Regularized Tree - Train Accuracy:", accuracy_score(y_train, regularized_tree.predict(X_train)))
+print("Regularized Tree - Test Accuracy :", accuracy_score(y_test, regularized_tree.predict(X_test)))
+
+## Ensemble Learning
+
+Ensemble learning is the process of combining multiple models, often weak learners, to create a stronger overall model.
+
+### Types of Ensemble Methods
+
+- Bagging
+- Boosting
+- Stacking
+
+### Bagging (Bootstrap Aggregating)
+
+- Train multiple models on random subsets of the data.  
+- Predictions are **averaged** (for regression) or **voted** (for classification).  
+- Example: Random Forest
+
+### Boosting
+
+- Models are trained **sequentially**, each new one focusing on errors of the previous.  
+- Often improves accuracy but can overfit if not controlled.  
+- Examples: AdaBoost, Gradient Boosting, XGBoost, LightGBM, CatBoost
+
+### Stacking
+
+- Multiple different models are trained.  
+- Their outputs are fed into a **meta-model** that makes the final prediction.
+
+### Uses
+
+- Reduces variance  
+- Reduces bias  
+- Often achieves state-of-the-art performance  
+- More robust and stable than individual models
+
+# Ensemble Learning (Voting Classifier)
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Base models
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+
+# Ensemble
+from sklearn.ensemble import VotingClassifier
+
+# Load dataset
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Define individual models
+log_clf = LogisticRegression(max_iter=1000)
+tree_clf = DecisionTreeClassifier()
+svm_clf = SVC(probability=True)  # probability=True required for soft voting
+
+# Ensemble model (Voting)
+ensemble_clf = VotingClassifier(
+    estimators=[
+        ('lr', log_clf),
+        ('dt', tree_clf),
+        ('svm', svm_clf)
+    ],
+    voting='soft'  # 'hard' for majority vote, 'soft' for weighted probabilities
+)
+
+# Train ensemble
+ensemble_clf.fit(X_train, y_train)
+
+# Evaluate
+y_pred = ensemble_clf.predict(X_test)
+print("Ensemble Accuracy:", accuracy_score(y_test, y_pred))
+
+from sklearn.ensemble import BaggingClassifier, RandomForestClassifier
+
+# Bagging with Decision Trees
+bagging_clf = BaggingClassifier(
+    estimator=DecisionTreeClassifier(),
+    n_estimators=50,
+    random_state=42,
+    n_jobs=-1
+)
+bagging_clf.fit(X_train, y_train)
+print("Bagging Accuracy:", accuracy_score(y_test, bagging_clf.predict(X_test)))
+
+# Random Forest (bagging + feature randomness)
+rf_clf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_clf.fit(X_train, y_train)
+print("Random Forest Accuracy:", accuracy_score(y_test, rf_clf.predict(X_test)))
+
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
+
+# AdaBoost
+ada_clf = AdaBoostClassifier(
+    estimator=DecisionTreeClassifier(max_depth=1),
+    n_estimators=50,
+    learning_rate=1.0,
+    random_state=42
+)
+ada_clf.fit(X_train, y_train)
+print("AdaBoost Accuracy:", accuracy_score(y_test, ada_clf.predict(X_test)))
+
+# Gradient Boosting
+gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+gb_clf.fit(X_train, y_train)
+print("Gradient Boosting Accuracy:", accuracy_score(y_test, gb_clf.predict(X_test)))
+
+# Random forest can rank features by their importance in prediction
+import pandas as pd
+
+rf = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+rf.fit(X_train, y_train)
+
+# Feature importance
+importance = pd.DataFrame({
+    "Feature": iris.feature_names,
+    "Importance": rf.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+print(importance)
+
+# C6: BOOSTING
+
+## Boosting
+
+- **Definition:** Boosting is an ensemble learning technique that combines multiple weak learners to form a strong learner.  
+- **Goal:** Improve accuracy by focusing more on the errors made by previous models.  
+- **Key idea:** Each new model is trained to correct the mistakes of the prior ones.  
+- **Applications:** Classification, regression, ranking, anomaly detection.  
+
+### Common Algorithms
+
+- AdaBoost (Adaptive Boosting)  
+- Gradient Boosting  
+- XGBoost  
+- LightGBM  
+- CatBoost  
+
+### Working Steps
+
+1. Train a weak learner.  
+2. Evaluate its errors.  
+3. Increase the weight/importance of misclassified points.  
+4. Train the next learner focusing on those hard examples.  
+5. Repeat for multiple learners.  
+6. Combine all learners into a weighted majority vote or weighted sum.  
+
+### Advantages
+
+- Converts weak models into strong ones.  
+- Often achieves state-of-the-art accuracy.  
+- Handles both linear and complex non-linear data.  
+
+### Disadvantages
+
+- Prone to overfitting if not tuned well.  
+- Computationally more expensive compared to bagging methods like Random Forest.
+
+# AdaBoost example
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Create synthetic dataset
+X, y = make_classification(n_samples=1000, n_features=20, n_informative=15,
+                           n_redundant=5, random_state=42)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Define base learner (weak learner)
+base_learner = DecisionTreeClassifier(max_depth=1)  # Decision stump
+
+# Define AdaBoost model
+ada_model = AdaBoostClassifier(
+    estimator=base_learner,
+    n_estimators=50,       # number of weak learners
+    learning_rate=1.0,     # step size
+    random_state=42
+)
+
+# Train model
+ada_model.fit(X_train, y_train)
+
+# Predictions
+y_pred = ada_model.predict(X_test)
+
+# Accuracy
+print("AdaBoost Accuracy:", accuracy_score(y_test, y_pred))
+
+# Gradient boost example
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Create synthetic dataset
+X, y = make_classification(n_samples=1000, n_features=20, n_informative=15,
+                           n_redundant=5, random_state=42)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Define Gradient Boosting model
+gb_model = GradientBoostingClassifier(
+    n_estimators=100,     # number of trees
+    learning_rate=0.1,    # shrinkage / step size
+    max_depth=3,          # depth of each tree
+    random_state=42
+)
+
+# Train model
+gb_model.fit(X_train, y_train)
+
+# Predictions
+y_pred = gb_model.predict(X_test)
+
+# Accuracy
+print("Gradient Boosting Accuracy:", accuracy_score(y_test, y_pred))
+
+|                    | AdaBoost                                                                                                 | Gradient Boost                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Idea**           | Focuses on misclassified samples                                                                         | Focuses on residual errors                                                                                                              |
+| **How**            | Assigns higher weights to misclassified data points so the next weak learner pays more attention to them | Each new learner is trained to predict the residuals                                                                                    |
+| **Weak learners**  | Often uses decision stumps                                                                               | Typically deeper decision trees                                                                                                         |
+| **Loss functions** | Exponential loss                                                                                         | Very flexible, supports many differentiable loss functions                                                                              |
+| **Strengths**      | - Very simple and easy to implement <br> - Works well for binary classification                          | - More flexible and powerful <br> - Works for classification, regression, ranking <br> - Usually achieves higher accuracy than AdaBoost |
+| **Weaknesses**     | - Sensitive to outliers and noisy data <br> - Less flexible than GBM                                     | - More computationally expensive <br> - Needs careful tuning                                                                            |
+
+# XGBoost: Xtreme Gradient Boosting
+import xgboost as xgb
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+# Load dataset
+X, y = load_diabetes(return_X_y=True)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create XGBoost model
+model = xgb.XGBRegressor(objective="reg:squarederror", n_estimators=100)
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# Evaluate
+mse = mean_squared_error(y_test, y_pred)
+print("Mean Squared Error:", mse)
+
+## Stacking
+
+- **Definition:** Combining multiple different models and then using a meta-model to make the final prediction.  
+
+### Working
+
+- **Base models:** Each predicts on the dataset.  
+- **Meta model:**  
+    - Learns how to best combine the outputs of the base models.  
+    - Usually a simple model.  
+- **Process:**  
+    1. Train base models on the training data.  
+    2. Collect their predictions.  
+    3. Train the meta model on those predictions.  
+    4. For new data, base models make predictions, and the meta model provides the final prediction.  
+
+### Usage
+
+- Captures different strengths of models.  
+- Often performs better than individual models.  
+- Reduces the risk of relying on a single model's biases.  
+
+### Disadvantages
+
+- Can overfit if not done carefully.  
+- Requires out-of-fold predictions for training the meta model.  
+- More computationally expensive.  
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+# 1. Load dataset
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 2. Define base learners
+base_learners = [
+    ('decision_tree', DecisionTreeClassifier(max_depth=3, random_state=42)),
+    ('svm', SVC(probability=True, kernel='linear', random_state=42))
+]
+
+# 3. Define meta-learner (final estimator)
+meta_learner = LogisticRegression()
+
+# 4. Build Stacking Classifier
+stacking_model = StackingClassifier(
+    estimators=base_learners,
+    final_estimator=meta_learner
+)
+
+# 5. Train
+stacking_model.fit(X_train, y_train)
+
+# 6. Predict & Evaluate
+y_pred = stacking_model.predict(X_test)
+print("Stacking Model Accuracy:", accuracy_score(y_test, y_pred))
+
+## Voting
+
+- **Definition:** In this technique, multiple models are combined, and their predictions are aggregated by voting.  
+
+### Types of Voting
+
+1. **Hard Voting**  
+    - Each model votes for a class.  
+    - The final prediction is the class with the majority of votes.  
+
+2. **Soft Voting**  
+    - Models provide class probabilities instead of just votes.  
+    - The probabilities are averaged, and the class with the highest average probability is chosen.  
+    - Usually performs better if the models can output probabilities.  
+
+3. **Voting Regressor**  
+    - Instead of predicting a class, predictions are averaged across models.  
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+# 1. Load dataset
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 2. Define base learners
+log_clf = LogisticRegression(max_iter=1000)
+knn_clf = KNeighborsClassifier()
+dt_clf = DecisionTreeClassifier(random_state=42)
+
+# 3. Voting Classifier
+voting_clf = VotingClassifier(
+    estimators=[('lr', log_clf), ('knn', knn_clf), ('dt', dt_clf)],
+    voting='hard'   # change to 'soft' for soft voting
+)
+
+# 4. Train
+voting_clf.fit(X_train, y_train)
+
+# 5. Predict & Evaluate
+y_pred = voting_clf.predict(X_test)
+print("Voting Classifier Accuracy:", accuracy_score(y_test, y_pred))
