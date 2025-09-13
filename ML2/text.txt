@@ -1198,3 +1198,279 @@ voting_clf.fit(X_train, y_train)
 # 5. Predict & Evaluate
 y_pred = voting_clf.predict(X_test)
 print("Voting Classifier Accuracy:", accuracy_score(y_test, y_pred))
+
+# ====== Generic EDA & Preprocessing Pipeline (single block) ======
+# Edit the variables in the "CONFIG" section for each dataset
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score, confusion_matrix,
+    classification_report, cohen_kappa_score
+)
+
+sns.set(style="whitegrid")
+
+# ---------------- CONFIG - modify per dataset ----------------
+FILEPATH = "your_dataset.csv"   # <-- change
+TARGET = "Target"               # <-- change to actual target column name (e.g. 'is_canceled','Heart_Disease','Exited',etc.)
+ID_COLS = ["Booking_ID", "ID", "CustomerId", "Loan_ID"]  # candidate id-like columns to drop later if present
+ORDINAL_MAPPINGS = {
+    # example: 'Education': {'High School':0, 'Bachelors':1, 'Masters':2}
+}                               # <-- add only if dataset has ordered categoricals
+# -------------------------------------------------------------
+
+# 1. Read dataset
+df = pd.read_csv(FILEPATH)
+print(">>> 1) Shape of dataset:", df.shape)   # shape
+
+# 2. Identify numeric & categorical columns
+num_vars = df.select_dtypes(include=[np.number]).columns.tolist()
+cat_vars = df.select_dtypes(include=['object', 'category']).columns.tolist()
+# If some numeric columns are actually categorical (e.g., codes), adjust manually:
+# cat_vars += ['some_code_col']; num_vars.remove('some_code_col')
+
+print(">>> 2) Numerical variables (count):", len(num_vars))
+print(">>> 2) Categorical variables (count):", len(cat_vars))
+print("Numerical cols:", num_vars)
+print("Categorical cols:", cat_vars)
+
+# 3. Descriptive stats: numerical (five-number summary) and categorical
+print("\n>>> 3) Numerical descriptive (five-number summary + mean/std):")
+display(df[num_vars].describe().T)   # shows count, mean, std, min, 25%,50%,75%,max
+
+print("\n>>> 3) Categorical descriptive (counts and top values):")
+display(df[cat_vars].describe(include='object').T)
+
+# Also show % missing per column
+print("\n>>> Missing values (%):")
+missing_pct = df.isnull().mean().sort_values(ascending=False) * 100
+display(missing_pct[missing_pct > 0])
+
+# 4. Summarize categorical variables: unique counts and proportions
+print("\n>>> 4) Category counts & proportions (top categories shown):")
+for c in cat_vars:
+    vc = df[c].value_counts(dropna=False)
+    print(f"\nColumn: {c} — unique: {vc.size}")
+    print(vc.head(10))
+    print("Proportions (top 10):")
+    print((vc / len(df)).head(10).round(4))
+
+# 5. Visual checks: histograms for numeric, barplots for small-card categorical
+print("\n>>> 5) Quick numeric histograms (inspect distribution & possible outliers)")
+for c in num_vars:
+    plt.figure(figsize=(6,2.6))
+    sns.histplot(df[c].dropna(), kde=True)
+    plt.title(f"Histogram: {c}")
+    plt.tight_layout()
+    plt.show()
+
+print("\n>>> 5b) Boxplots (outlier visual) for numerics")
+for c in num_vars:
+    plt.figure(figsize=(6,2.6))
+    sns.boxplot(x=df[c])
+    plt.title(f"Boxplot: {c}")
+    plt.tight_layout()
+    plt.show()
+
+# 6. Relationship between a categorical predictor and target (example shown generically)
+if TARGET in df.columns:
+    some_cat = None
+    # try to pick a categorical column to show relationship; if none exist skip
+    if len(cat_vars) > 0:
+        some_cat = cat_vars[0]
+        print(f"\n>>> 6) Example relationship: {some_cat} vs {TARGET} (countplot)")
+        plt.figure(figsize=(8,4))
+        sns.countplot(x=some_cat, hue=TARGET, data=df)
+        plt.title(f"{some_cat} vs {TARGET}")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+    else:
+        print("No categorical columns to show relation to target.")
+
+# 7. Missing value handling (impute centrally)
+print("\n>>> 7) Imputing missing values (median for numeric, mode for categorical)")
+df_imputed = df.copy()
+
+# numeric -> median
+for c in num_vars:
+    if df_imputed[c].isnull().any():
+        med = df_imputed[c].median()
+        df_imputed[c].fillna(med, inplace=True)
+        print(f"Filled numeric {c} with median: {med}")
+
+# categorical -> mode
+for c in cat_vars:
+    if df_imputed[c].isnull().any():
+        mode_val = df_imputed[c].mode(dropna=True)
+        if len(mode_val) > 0:
+            mode_val = mode_val[0]
+            df_imputed[c].fillna(mode_val, inplace=True)
+            print(f"Filled categorical {c} with mode: {mode_val}")
+        else:
+            # all NaN case
+            df_imputed[c].fillna("Missing", inplace=True)
+            print(f"Filled categorical {c} (all-missing) with 'Missing'")
+
+# 8. Detect outliers (IQR) and z-score (optional) — just reporting counts
+print("\n>>> 8) Outlier detection")
+Q1 = df_imputed[num_vars].quantile(0.25)
+Q3 = df_imputed[num_vars].quantile(0.75)
+IQR = Q3 - Q1
+outlier_mask = ((df_imputed[num_vars] < (Q1 - 1.5 * IQR)) | (df_imputed[num_vars] > (Q3 + 1.5 * IQR)))
+outlier_counts = outlier_mask.sum().sort_values(ascending=False)
+print("Outlier counts by column (IQR method):")
+display(outlier_counts[outlier_counts>0])
+
+# Z-score method (flag columns with many z>3)
+zscore_flags = {}
+for c in num_vars:
+    col = df_imputed[c].dropna()
+    if len(col) > 0:
+        z_scores = np.abs(stats.zscore(col))
+        z_gt3 = (z_scores > 3).sum()
+        zscore_flags[c] = z_gt3
+print("Z>3 counts (numeric cols):", {k:v for k,v in zscore_flags.items() if v>0})
+
+# Decision note (print suggestion) - adjust per exam: cap, log-transform, or drop extreme rows.
+print("\nDecision guidance: If outliers are data errors remove; if legitimate but skewed consider log-transform or capping (winsorize).")
+
+# 9. Drop unnecessary identifier columns (if present) - but do not drop if asked to keep (some exams want to keep)
+id_present = [c for c in ID_COLS if c in df_imputed.columns]
+if id_present:
+    print("\n>>> ID-like columns found (candidates to drop before modeling):", id_present)
+    # to drop uncomment next line in modeling scenario:
+    # df_imputed.drop(columns=id_present, inplace=True)
+
+# 10. Encoding categorical variables:
+#    - Apply ORDINAL_MAPPINGS where provided
+#    - For remaining categoricals: either LabelEncoder for binary/small or get_dummies for nominal
+print("\n>>> 10) Encoding categorical variables")
+df_encoded = df_imputed.copy()
+
+# ordinal
+for col, mapping in ORDINAL_MAPPINGS.items():
+    if col in df_encoded.columns:
+        df_encoded[col] = df_encoded[col].map(mapping).astype(float)
+        print(f"Applied ordinal mapping on {col}")
+
+# Label-encode small-cardinality columns (<=2 or <=3 unique can use label encoding)
+le = LabelEncoder()
+for c in list(cat_vars):
+    if c in df_encoded.columns and c not in ORDINAL_MAPPINGS:
+        nunique = df_encoded[c].nunique(dropna=False)
+        if nunique <= 2:
+            df_encoded[c] = le.fit_transform(df_encoded[c].astype(str))
+            print(f"Label-encoded binary col: {c}")
+        else:
+            # for many nominal categories use get_dummies (one-hot) to avoid arbitrary ordering
+            # we'll create dummies later in bulk
+            pass
+
+# One-hot / get_dummies for remaining categoricals (excluding target and ordinal-mapped)
+dummies_cols = [c for c in cat_vars if c in df_encoded.columns and c not in ORDINAL_MAPPINGS and df_encoded[c].nunique() > 2]
+if dummies_cols:
+    print("One-hot encoding these columns:", dummies_cols)
+    df_encoded = pd.get_dummies(df_encoded, columns=dummies_cols, drop_first=True)
+
+# 11. Correlation matrix & heatmap (numeric only)
+print("\n>>> 11) Correlation heatmap (numeric columns)")
+numeric_after = df_encoded.select_dtypes(include=[np.number]).columns.tolist()
+plt.figure(figsize=(12,9))
+corr = df_encoded[numeric_after].corr()
+sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", cbar_kws={'shrink':.8})
+plt.title("Correlation heatmap")
+plt.show()
+
+# 12. Relationship plots between important vars and target (countplots & boxplots)
+if TARGET in df_encoded.columns:
+    print("\n>>> 12) Target class balance:")
+    display(df_encoded[TARGET].value_counts())
+    plt.figure(figsize=(6,3))
+    sns.countplot(x=TARGET, data=df_encoded)
+    plt.title("Target balance")
+    plt.show()
+
+    # for a few numeric variables show boxplot by target
+    show_num = numeric_after.copy()
+    if TARGET in show_num: show_num.remove(TARGET)
+    show_num = show_num[:4]  # keep limited for display
+    for col in show_num:
+        plt.figure(figsize=(6,3))
+        sns.boxplot(x=TARGET, y=col, data=df_encoded)
+        plt.title(f"{col} by {TARGET}")
+        plt.tight_layout()
+        plt.show()
+
+    # for a few categorical dummies show mean target
+    cat_for_rel = [c for c in df_encoded.columns if c not in numeric_after and c!=TARGET][:6]
+    for c in cat_for_rel:
+        plt.figure(figsize=(6,3))
+        sns.barplot(x=c, y=TARGET, data=df_encoded)
+        plt.title(f"Mean {TARGET} by {c}")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+# 13. Train-test split and scaling
+print("\n>>> 13) Train-test split (70:30) and scaling")
+if TARGET not in df_encoded.columns:
+    raise KeyError(f"Target column '{TARGET}' not found in data after encoding. Update TARGET variable in config.")
+
+X = df_encoded.drop(TARGET, axis=1)
+y = df_encoded[TARGET]
+
+# If any ID-like columns remain, drop them here before split for modeling:
+for c in id_present:
+    if c in X.columns:
+        X = X.drop(columns=c)
+
+# stratify if binary target and has at least 2 classes
+stratify_arg = y if y.nunique() == 2 else None
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, stratify=stratify_arg
+)
+
+scaler = StandardScaler()
+# scale numeric columns only (get column list)
+numeric_cols_to_scale = X_train.select_dtypes(include=[np.number]).columns.tolist()
+X_train_scaled = X_train.copy()
+X_test_scaled = X_test.copy()
+X_train_scaled[numeric_cols_to_scale] = scaler.fit_transform(X_train[numeric_cols_to_scale])
+X_test_scaled[numeric_cols_to_scale] = scaler.transform(X_test[numeric_cols_to_scale])
+
+print("X_train shape:", X_train_scaled.shape, "X_test shape:", X_test_scaled.shape)
+
+# 14. (Optional) Fit a base model (Logistic Regression) and report metrics (useful for question 4)
+# Use this section for Q4 where model required. For pure EDA questions you can skip model training.
+print("\n>>> 14) (Optional) Fit base Logistic Regression model and report metrics")
+try:
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train_scaled, y_train)
+    y_pred = model.predict(X_test_scaled)
+
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
+    kappa = cohen_kappa_score(y_test, y_pred)
+
+    print("Accuracy:", round(acc,4))
+    print("Precision:", round(prec,4))
+    print("Recall:", round(rec,4))
+    print("F1-score:", round(f1,4))
+    print("Cohen's Kappa:", round(kappa,4))
+    print("\nClassification report:\n", classification_report(y_test, y_pred, zero_division=0))
+    print("Confusion matrix:\n", confusion_matrix(y_test, y_pred))
+except Exception as e:
+    print("Model training skipped or failed:", e)
+
+# ========== END of pipeline ==========
